@@ -35,3 +35,6 @@ Various resources that saved me a lot of development time:
 * Marcin Grysko [explains](http://grysz.com/2011/04/12/how-ign-tile-servers-work/) how the spain ign tile server works.
 * World Topo Maps uses some code from [Chuck Taylor](http://home.hiwaay.net/~taylorc/toolbox/geography/geoutm.html) for the UTM projection
 
+## Todo
+
+* Add support for iberpix satellite images

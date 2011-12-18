@@ -7,6 +7,15 @@
  * file that was distributed with this source code.
  */
 
+/**
+ * Returns a map object for Spain
+ *
+ * @param {google.map.Map}         map     The google map
+ * @param {layer}                  layer   The name of the layer to display
+ * @param {google.map.MapOptions=} options The map options
+ *
+ * @return {map} The map
+ */
 WTGmap.getIgnEMap = function(map, layer, options) {
 
     var zone,
@@ -28,6 +37,13 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         },
         mapType = new google.maps.ImageMapType(options);
 
+    /**
+     * Returns the name of the layer according to the zoom value
+     *
+     * @param {!number} zoom The google map zoom level
+     *
+     * @return {string} The layer name
+     */
     function getLayer(zoom) {
         if (zoom < 11) {
             return "mapa_millon";
@@ -40,6 +56,14 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         }
     }
 
+    /**
+     * Returns the URL of the request tile
+     *
+     * @param {google.maps.Point} point Tile coordinate
+     * @param {number}            zoom  The zoom level
+     *
+     * @return {string} The tile URL
+     */
     function getTileUrl(point, zoom) {
         return "http://ts{server}.iberpix.ign.es/tileserver/n={layer};z={zone};r={scale};i={x};j={y}.jpg"
             .replace('{server}', server++ % 5)
@@ -51,6 +75,9 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         ;
     }
 
+    /**
+     * Create a control to display the copyright
+     */
     function initCopyright() {
         var img = document.createElement('img'),
             link = document.createElement('a');
@@ -69,6 +96,9 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         return link;
     }
 
+    /**
+     * Initialize the projection accordring to the map center and zoom level
+     */
     function initProjection() {
         var oldZone = zone,
             zoom = map.getZoom(),
@@ -96,20 +126,30 @@ WTGmap.getIgnEMap = function(map, layer, options) {
     initProjection();
     copyright = initCopyright();
     mapType.projection = googProj;
-    mapType._;
 
     return {
+        /** @type {google.maps.ImageMapType} */
         mapType: mapType,
+        /**
+         * The area covered by the tiles
+         * @type {google.maps.LatLngBounds}
+         */
         bounds: bounds = new google.maps.LatLngBounds(
             new google.maps.LatLng(34, -13.5),
             new google.maps.LatLng(44, 4)
         ),
+        /**
+         * This function must be called before displaying the map
+         */
         enable: function() {
             initProjection();
             listeners.zoom = google.maps.event.addListener(map, 'zoom_changed', initProjection);
             listeners.center = google.maps.event.addListener(map, 'center_changed', initProjection);
             copyright.style.display = 'block';
         },
+        /**
+         * This function must be called when the map is no more displayed
+         */
         disable: function() {
             listeners.zoom && google.maps.event.removeListener(listeners.zoom);
             listeners.center && google.maps.event.removeListener(listeners.center);

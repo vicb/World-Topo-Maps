@@ -7,6 +7,15 @@
  * file that was distributed with this source code.
  */
 
+/**
+ * Returns a map object for Switzerland
+ *
+ * @param {google.map.Map}         map     The google map
+ * @param {layer}                  layer   The name of the layer to display
+ * @param {google.map.MapOptions=} options The map options
+ *
+ * @return {map} The map
+ */
 WTGmap.getSwissTopoMap = function(map, layer, options) {
 
     var gZoom,
@@ -43,6 +52,9 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
         },
         mapType = new google.maps.ImageMapType(options);
 
+    /**
+     * Create a control to display the copyright
+     */
     function initCopyright() {
         var link = document.createElement('a');
 
@@ -63,6 +75,9 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
         return link;
     }
 
+    /**
+     * Initialize the projection accordring to the map center and zoom level
+     */
     function initProjection() {
         var zoom = map.getZoom();
 
@@ -78,6 +93,14 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
         map.setCenter(center);
     }
 
+    /**
+     * Returns the URL of the request tile
+     *
+     * @param {google.maps.Point} point Tile coordinate
+     * @param {number}            zoom  The zoom level
+     *
+     * @return {string} The tile URL
+     */
     function getTileUrl(point, zoom) {
         return 'http://wmts{server}.geo.admin.ch/1.0.0/{layer}/default/{date}/{proj}/{zoom}/{y}/{x}.jpeg'
             .replace('{server}', server++ % 4)
@@ -96,22 +119,36 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
     mapType.projection = googProj;
 
     return {
+        /** @type {google.maps.ImageMapType} */
         mapType: mapType,
+        /**
+         * The area covered by the tiles
+         * @type {google.maps.LatLngBounds}
+         */
         bounds: new google.maps.LatLngBounds(
-        new google.maps.LatLng(45.398181, 5.140242),
-        new google.maps.LatLng(48.230651, 11.47757)
+            new google.maps.LatLng(45.398181, 5.140242),
+            new google.maps.LatLng(48.230651, 11.47757)
         ),
+        /**
+         * This function must be called before displaying the map
+         */
         enable: function() {
             center = map.getCenter();
             initProjection();
+            // Capture the center value when the map becomes idle
+            // This is required to apply this value when the zoom level changes as consecutive zoom
+            // resolution ratio is not 2 as expected by the google maps API
             listeners.idle = google.maps.event.addListener(map, 'idle', function(){ center = map.getCenter(); });
             listeners.zoom = google.maps.event.addListener(map, 'zoom_changed', initProjection);
             copyright.style.display = 'block';
         },
+        /**
+         * This function must be called when the map is no more displayed
+         */
         disable: function() {
-        listeners.idle && google.maps.event.removeListener(listeners.idle);
-        listeners.zoom && google.maps.event.removeListener(listeners.zoom);
-        copyright.style.display = 'none';
+            listeners.idle && google.maps.event.removeListener(listeners.idle);
+            listeners.zoom && google.maps.event.removeListener(listeners.zoom);
+            copyright.style.display = 'none';
         }
     }
 };

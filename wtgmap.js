@@ -13,19 +13,40 @@ var WTGmap = {
 };
 
 WTGmap.Projection = function() {
+    /**
+     * Convert degree to radian
+     *
+     * @param {number} deg The value expressed in degree
+     *
+     * @return {number} The value expressed in radian
+     */
      function deg2rad(deg) {
          return deg * Math.PI / 180;
      }
+
+    /**
+     * Convert radian to degree
+     *
+     * @param {number} rad The value expressed in radian
+     *
+     * @return {number} The value expressed in degree
+     */
 
      function rad2deg(rad) {
          return rad / Math.PI * 180;
      }
 
+    /**
+     * Convert degree to sexagecimal seconds
+     *
+     * @param {number} angle The value expressed in decimal degree
+     *
+     * @return {number} The value expressed in sexagecimal second
+     */
     function deg2secsex(angle) {
         var deg = parseInt(angle),
             min = parseInt((angle - deg) * 60),
             sec = (((angle - deg) * 60) - min) * 60;
-
         return sec + min * 60 + deg * 3600;
     }
 
@@ -142,11 +163,27 @@ WTGmap.Projection = function() {
 
     };
 
+    /**
+     * The google map projection
+     *
+     * @constructor
+     * @param {object=} proj   The projection object
+     * @param {number}  scale0 The resolution at zoom level0 (= a single tile)
+     *
+     * @return {google.maps.Projection} The projection
+     */
     function Projection(proj, scale0) {
         this.proj = proj;
         this.scale0 = scale0;
     }
 
+    /**
+     * Forward projection
+     *
+     * @param {google.maps.LatLng} latLng The coordinates
+     *
+     * @return {google.maps.Point} The projected coordinates
+     */
     Projection.prototype.fromLatLngToPoint = function(latLng) {
         var coord = this.proj.forward(latLng.lat(), latLng.lng());
         return new google.maps.Point(
@@ -155,6 +192,14 @@ WTGmap.Projection = function() {
         );
     };
 
+    /**
+     * Inverse projection
+     *
+     * @param {google.maps.Point} point The projected coordinates
+     * @param {boolean=} noWrap Whether to wrap the coordinates
+     *
+     * @return {google.maps.LatLng} latLng The coordinates
+     */
     Projection.prototype.fromPointToLatLng = function(point, noWrap) {
         var coord = this.proj.inverse(
             this.proj.origin.x + point.x * this.scale0,

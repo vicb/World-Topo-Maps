@@ -7,6 +7,15 @@
  * file that was distributed with this source code.
  */
 
+/**
+ * Returns a map object for France
+ *
+ * @param {google.map.Map}         map     The google map
+ * @param {layer}                  layer   The name of the layer to display
+ * @param {google.map.MapOptions=} options The map options
+ *
+ * @return {map} The map
+ */
 WTGmap.getIgnFMap = function(map, drm, layer, options) {
 
     var tileSize,
@@ -42,6 +51,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         },
         mapType = new google.maps.ImageMapType(options);
 
+    // Initialize the parameters
     for (var t in params) {
         if (params.hasOwnProperty(t)) {
             params[t].bounds = new google.maps.LatLngBounds(
@@ -52,6 +62,14 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         }
     }
 
+    /**
+     * Returns the URL of the request tile
+     *
+     * @param {google.maps.Point} point Tile coordinate
+     * @param {number}            zoom  The zoom level
+     *
+     * @return {string} The tile URL
+     */
     function getTileUrl(point, zoom) {
         return 'http://wxs.ign.fr/geoportail/wmsc?LAYERS={layer}&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&SRS={proj}&BBOX={bbox}&WIDTH=256&HEIGHT=256&TILED=true&gppkey={key}'
             .replace('{bbox}', [point.x * tileSize, (-point.y - 1) * tileSize, (point.x + 1) * tileSize, -point.y * tileSize])
@@ -62,6 +80,9 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         ;
     }
 
+    /**
+     * Create a control to display the copyright
+     */
     function initCopyright() {
         var img = document.createElement('img'),
             link = document.createElement('a');
@@ -85,21 +106,27 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         return link;
     }
 
+    /**
+     * Initialize the projection accordring to the map center and zoom level
+     */
     function initProjection() {
         var scale,
             zoom = map.getZoom();
 
         if (zoom < zoomOffsetGeop) {
+            // Lower zoom levels use a Miller projection
             scale = function(zoom) {
                 return 39135.75 / Math.pow(2, zoom - zoomOffsetMiller);
             };
             googProj.proj = WTGmap.Projection.miller();
             territory = 'world';
         } else {
+            // Higher zoom levels use an equirectangular projection
             var oldTerritory = territory,
                 center = map.getCenter(),
                 bounds = map.getBounds();
 
+            // Get the territory according to the area covered by the map
             if (!params[territory] || (bounds && !params[territory].bounds.intersects(bounds))) {
                 for(var t in params) {
                     if(params.hasOwnProperty(t) && bounds && params[t].bounds.intersects(bounds)) {
@@ -125,6 +152,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         tileSize = options.tileSize.width * scale(zoom);
     }
 
+    // Update the DRM token even if the map is not currenlty enabled
     google.maps.event.addListener(map, 'idle', drm.getToken);
 
     initProjection();
@@ -132,14 +160,25 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
     mapType.projection = googProj;
 
     return {
+        /** @type {google.maps.ImageMapType} */
         mapType: mapType,
+        /**
+         * The areas covered by the tiles
+         * @type {Array.<google.maps.LatLngBounds>}
+         */
         bounds: bounds,
+        /**
+         * This function must be called before displaying the map
+         */
         enable: function() {
             initProjection();
             listeners.zoom = google.maps.event.addListener(map, 'zoom_changed', initProjection);
             listeners.center = google.maps.event.addListener(map, 'center_changed', initProjection);
             copyright.style.display = 'block';
         },
+        /**
+         * This function must be called when the map is no more displayed
+         */
         disable: function() {
             listeners.zoom && google.maps.event.removeListener(listeners.zoom);
             listeners.center && google.maps.event.removeListener(listeners.center);
@@ -148,9 +187,15 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
     }
 };
 
+
 WTGmap.Drm = {
     token: null,
     script: null,
+    /**
+     * This callback update the token value
+     *
+     * @param {Object} json The token
+     */
     updateToken: function(json) {
         WTGmap.Drm.token = json.gppkey;
         document.body.removeChild(WTGmap.Drm.script);
@@ -163,6 +208,11 @@ WTGmap.IgnGeoDrm = function(apiKey) {
         tiles = 1,
         ttl = 1;
 
+    /**
+     * Make a JSONP call
+     *
+     * @param {string} url The URL to call
+     */
     function xdSend(url) {
         WTGmap.Drm.script = document.createElement('script');
         WTGmap.Drm.script.setAttribute('src', url);
@@ -170,15 +220,21 @@ WTGmap.IgnGeoDrm = function(apiKey) {
         document.body.appendChild(WTGmap.Drm.script);
     }
 
+    /**
+     * Update the token
+     */
     function getToken() {
         if (tiles > 0) {
+            // Start a new period when there has been some activity during the last period,
             tiles = 0;
             tickTimer = window.setTimeout(getToken, 1 * 60 * 1000);
             if (--ttl === 0) {
+                // Update the token value when the ttl is reached
                 ttl = 9;
                 xdSend('http://jeton-api.ign.fr/getToken?callback=WTGmap.Drm.updateToken&output=json&key=' + apiKey + (WTGmap.Drm.token ? '&gppkey=' + WTGmap.Drm.token : ''));
             }
         } else {
+            // Release the token when there has been no activity
             xdSend('http://jeton-api.ign.fr/releaseToken?gppkey=' + WTGmap.Drm.token);
             ttl = 1;
             WTGmap.Drm.token = null;
@@ -189,9 +245,15 @@ WTGmap.IgnGeoDrm = function(apiKey) {
     getToken();
 
     return {
+        /**
+         * Returns the token value
+         *
+         * @return {string} The token
+         */
         getToken: function() {
             tiles++;
             if (!tickTimer) {
+                // Restart a period when the timer has been stopped
                 getToken();
             }
             return WTGmap.Drm.token;
