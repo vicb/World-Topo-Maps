@@ -21,11 +21,12 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
 
     var tileSize,
         copyright,
-        bounds = [],
         territory = 'FXX',
         listeners = {},
         zoomOffsetMiller = Math.round(Math.log(2 * Math.PI * 6378137 / (39135.75 * 256)) / Math.LN2),
+        scale0Miller = 39135.75 * Math.pow(2, zoomOffsetMiller),
         zoomOffsetGeop = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
+        scale0Geop = 2048 * Math.pow(2, zoomOffsetGeop),
         options = options || {},
         googProj = new WTGmap.Projection.google(),
         options = {
@@ -59,7 +60,6 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
                 new google.maps.LatLng(params[t].bounds[0], params[t].bounds[1]),
                 new google.maps.LatLng(params[t].bounds[2], params[t].bounds[3])
             );
-            bounds.push(params[t].bounds);
         }
     }
 
@@ -112,21 +112,18 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
      */
     function initProjection() {
         var scale,
-            zoom = map.getZoom(),
-            center = map.getCenter();
+            projFactory,
+            oldTerritory = territory,
+            zoom = map.getZoom();
 
         if (zoom < zoomOffsetGeop) {
             // Lower zoom levels use a Miller projection
-            scale = function(zoom) {
-                return 39135.75 / Math.pow(2, zoom - zoomOffsetMiller);
-            };
-            googProj.proj = WTGmap.Projection.miller();
+            scale = scale0Miller;
+            projFactory = WTGmap.Projection.miller;
             territory = 'world';
         } else {
             // Higher zoom levels use an equirectangular projection
-            var oldTerritory = territory,
-                center = map.getCenter(),
-                bounds = map.getBounds();
+            var bounds = map.getBounds();
 
             // Get the territory according to the area covered by the map
             if (!params[territory] || (bounds && !params[territory].bounds.intersects(bounds))) {
@@ -137,22 +134,23 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
                     }
                 }
             }
-
-            scale = function(zoom) {
-                return 2048 / Math.pow(2, zoom - zoomOffsetGeop);
-            };
-            if (!bounds || oldTerritory != territory) {
-                googProj.proj = WTGmap.Projection.geoportal({
+            scale = scale0Geop;
+            projFactory = function(territory) {
+                return WTGmap.Projection.geoportal({
                     Kx: params[territory].Kx,
                     Ky: 111319.49079327
                 });
-                map.setCenter(center);
             }
         }
 
-        googProj.scale0 = scale(0);
-        tileSize = options.tileSize.width * scale(zoom);
-        map.setCenter(center);
+        tileSize = options.tileSize.width * scale / Math.pow(2, zoom);
+
+        if (!bounds || oldTerritory != territory) {
+            var center = map.getCenter();
+            googProj.proj = projFactory(territory);
+            googProj.scale0 = scale;
+            map.setCenter(center);
+        }
     }
 
     // Update the DRM token even if the map is not currenlty enabled
@@ -169,7 +167,15 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
          * The areas covered by the tiles
          * @type {Array.<google.maps.LatLngBounds>}
          */
-        bounds: bounds,
+        bounds: (function() {
+            var bounds = [];
+            for (var t in params) {
+                if (params.hasOwnProperty(t)) {
+                    bounds.push(params[t].bounds);
+                }
+            }
+            return bounds;
+        })(),
         /**
          * This function must be called before displaying the map
          */
@@ -189,7 +195,6 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         }
     }
 };
-
 
 WTGmap.Drm = {
     token: null,
