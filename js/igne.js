@@ -113,7 +113,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         if (zoom < 11) {
             zone = 30;
         } else {
-            var lngCenter = map.getCenter().lng();
+            var lngCenter = center.lng();
             if (lngCenter < -6) {
                 zone = 29;
             } else if (lngCenter < 0) {
