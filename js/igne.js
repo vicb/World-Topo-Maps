@@ -40,7 +40,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
 
 
     layerNames = layer === WTGmap.LAYER_MAP ?
-        ['mapa_million', "mapa_mtn200", "mapa_mtn50", "mapa_mtn25"] :
+        ['mapa_millon', "mapa_mtn200", "mapa_mtn50", "mapa_mtn25"] :
         ['mapa_inicio', "spot5", "pnoa", "pnoa"];
 
     /**
