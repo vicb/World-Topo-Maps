@@ -21,6 +21,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
     var zone,
         center,
         copyright,
+        layerNames,
         server = 0,
         listeners = {},
         zoomOffset = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
@@ -37,6 +38,11 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         },
         mapType = new google.maps.ImageMapType(options);
 
+
+    layerNames = layer === WTGmap.LAYER_MAP ?
+        ['mapa_million', "mapa_mtn200", "mapa_mtn50", "mapa_mtn25"] :
+        ['mapa_inicio', "spot5", "pnoa", "pnoa"];
+
     /**
      * Returns the name of the layer according to the zoom value
      *
@@ -46,13 +52,13 @@ WTGmap.getIgnEMap = function(map, layer, options) {
      */
     function getLayer(zoom) {
         if (zoom < 11) {
-            return "mapa_millon";
+            return layerNames[0];
         } else if (zoom < 13) {
-            return "mapa_mtn200";
+            return layerNames[1];
         } else if (zoom < 15) {
-            return "mapa_mtn50";
+            return layerNames[2];
         } else {
-            return "mapa_mtn25";
+            return layerNames[3];
         }
     }
 
