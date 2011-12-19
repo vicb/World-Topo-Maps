@@ -112,7 +112,8 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
      */
     function initProjection() {
         var scale,
-            zoom = map.getZoom();
+            zoom = map.getZoom(),
+            center = map.getCenter();
 
         if (zoom < zoomOffsetGeop) {
             // Lower zoom levels use a Miller projection
@@ -151,6 +152,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
 
         googProj.scale0 = scale(0);
         tileSize = options.tileSize.width * scale(zoom);
+        map.setCenter(center);
     }
 
     // Update the DRM token even if the map is not currenlty enabled
