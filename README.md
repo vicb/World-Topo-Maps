@@ -37,4 +37,5 @@ Various resources that saved me a lot of development time:
 
 ## Todo
 
-* Add support for iberpix satellite images
+* Add support for iberpix satellite images.
+* Make the core class API agnostic to make it possible to support other mapping libraries.

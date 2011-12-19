@@ -11,6 +11,7 @@
  * Returns a map object for France
  *
  * @param {google.map.Map}         map     The google map
+ * @param {drm}                    drm     IGN GeoDrm handler
  * @param {layer}                  layer   The name of the layer to display
  * @param {google.map.MapOptions=} options The map options
  *
