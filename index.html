@@ -108,10 +108,17 @@
                 })
                 .find('li')
                     .each(function() {
-                        new google.maps.Marker({
+                        var text = $(this).text();
+                        var marker = new google.maps.Marker({
                             position: new google.maps.LatLng($(this).data('lat'), $(this).data('lng')),
                             map: map,
-                            title: $(this).text()
+                            title: text
+                        });
+                        google.maps.event.addListener(marker, 'click', function() {
+                            var infowindow = new google.maps.InfoWindow({
+                                content: text
+                            })
+                            infowindow.open(map, marker)
                         });
                     })
             ;
