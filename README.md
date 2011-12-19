@@ -33,9 +33,9 @@ Various resources that saved me a lot of development time:
 
 * Shama [explains](http://www.developpez.net/forums/d999116/applications/sig-systeme-dinformation-geographique/ign-api-geoportail/affichage-couches-ign-sous-googlemap/) how to integrate geoportail tiles within Google maps API.
 * Marcin Grysko [explains](http://grysz.com/2011/04/12/how-ign-tile-servers-work/) how the spain ign tile server works.
-* World Topo Maps uses some code from [Chuck Taylor](http://home.hiwaay.net/~taylorc/toolbox/geography/geoutm.html) for the UTM projection
+* World Topo Maps uses some code from [Chuck Taylor](http://home.hiwaay.net/~taylorc/toolbox/geography/geoutm.html) for the UTM projection (not used any more)
+* [Transverse Mercator](http://code.google.com/p/google-maps-utility-library-v3/source/browse/trunk/arcgislink/src/arcgislink.js) projection from Nianwei Liu.
 
 ## Todo
 
-* Add support for iberpix satellite images.
 * Make the core class API agnostic to make it possible to support other mapping libraries.
