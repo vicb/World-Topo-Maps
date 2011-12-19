@@ -28,12 +28,12 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         options = options || {},
         googProj = new WTGmap.Projection.google(WTGmap.Projection.iberpix(30), 2048 * Math.pow(2,  zoomOffset)),
         options = {
-            alt: options.alt || 'IGNE',
+            alt: options.alt || 'IGNE ' + layer,
             getTileUrl: getTileUrl,
             isPng: false,
             maxZoom: options.maxZoom || 18,
             minZoom: options.minZoom || 6,
-            name: options.name || 'IGNE',
+            name: options.name || 'IGNE ' + layer,
             tileSize: new google.maps.Size(256, 256)
         },
         mapType = new google.maps.ImageMapType(options);

@@ -29,12 +29,12 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         options = options || {},
         googProj = new WTGmap.Projection.google(),
         options = {
-            alt: options.alt || 'IGN',
+            alt: options.alt || 'IGN ' + layer,
             getTileUrl: getTileUrl,
             isPng: false,
             maxZoom: options.maxZoom || 18,
             minZoom: options.minZoom || 2,
-            name: options.name || 'IGN',
+            name: options.name || 'IGN ' + layer,
             tileSize: new google.maps.Size(256, 256)
         },
         params = {

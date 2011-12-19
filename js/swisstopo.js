@@ -42,12 +42,12 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
             18: {scale: 0.5, zoom: 26}
         },
         options = {
-            alt: options.alt || 'SwissTopo',
+            alt: options.alt || 'SwissTopo ' + layer,
             getTileUrl: getTileUrl,
             isPng: false,
             maxZoom: options.maxZoom || 18,
             minZoom: options.minZoom || 5,
-            name: options.name || 'SwissTopo',
+            name: options.name || 'SwissTopo ' + layer,
             tileSize: new google.maps.Size(256, 256)
         },
         mapType = new google.maps.ImageMapType(options);
