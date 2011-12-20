@@ -9,7 +9,8 @@
 
 var WTMap = {
     LAYER_MAP:   'MAP',
-    LAYER_PHOTO: 'PHOTO'
+    LAYER_PHOTO: 'PHOTO',
+    Adapter: {}
 };
 
 WTMap.Projection = (function() {
@@ -156,55 +157,10 @@ WTMap.Projection = (function() {
         return [rad2deg(lamda), rad2deg(phi)];
       };
 
-    /**
-     * The google map projection
-     *
-     * @constructor
-     * @param {object=} proj   The projection object
-     * @param {number}  scale0 The resolution at zoom level0 (= a single tile)
-     *
-     * @return {google.maps.Projection} The projection
-     */
-    function Projection(proj, scale0) {
-        this.proj = proj;
-        this.scale0 = scale0;
-    }
-
-    /**
-     * Forward projection
-     *
-     * @param {google.maps.LatLng} latLng The coordinates
-     *
-     * @return {google.maps.Point} The projected coordinates
-     */
-    Projection.prototype.fromLatLngToPoint = function(latLng) {
-        var coord = this.proj.forward(latLng.lat(), latLng.lng());
-        return new google.maps.Point(
-            (coord.x - this.proj.origin.x) / this.scale0,
-            (this.proj.origin.y - coord.y) / this.scale0
-        );
-    };
-
-    /**
-     * Inverse projection
-     *
-     * @param {google.maps.Point} point The projected coordinates
-     * @param {boolean=} noWrap Whether to wrap the coordinates
-     *
-     * @return {google.maps.LatLng} latLng The coordinates
-     */
-    Projection.prototype.fromPointToLatLng = function(point, noWrap) {
-        var coord = this.proj.inverse(
-            this.proj.origin.x + point.x * this.scale0,
-            this.proj.origin.y - point.y * this.scale0
-        );
-        return new google.maps.LatLng(coord.lat, coord.lng, noWrap);
-    };
 
     return {
-        swisstopo: function() {
+        ESPG_21781: function() {
             return {
-                name: '21781',
                 origin: {x: 420000, y: 350000},
                 forward : function(lat, lng) {
                     lat = (deg2secsex(lat) - 169028.66) / 10000;
@@ -237,20 +193,19 @@ WTMap.Projection = (function() {
             }
         },
 
-        geoportal: function(factors) {
+        equiRectangular: function(factors) {
             return {
-                name: 'IGNF:GEOPORTAL{territory}',
                 origin: {x: 0, y: 0},
                 forward : function(lat, lng) {
                     return {
-                        x: lng * factors.Kx,
-                        y: lat * factors.Ky
+                        x: lng * factors.x,
+                        y: lat * factors.y
                     };
                 },
                 inverse : function(x, y) {
                     return {
-                        lat: y / factors.Ky,
-                        lng: x / factors.Kx
+                        lat: y / factors.y,
+                        lng: x / factors.x
                     };
                 }
             }
@@ -258,7 +213,6 @@ WTMap.Projection = (function() {
 
         miller: function() {
             return {
-                name: 'IGNF:MILLER',
                 origin: {x: 0, y: 0},
                 forward: function(lat, lng) {
                     return {
@@ -276,20 +230,19 @@ WTMap.Projection = (function() {
             };
         },
 
-        iberpix: function(zone) {
+        utm: function(zone, north) {
             var proj = new TransverseMercator({
                 semi_major: wgs84.A,
                 inverse_flattening: wgs84.IF,
                 unit: 1,
                 scale_factor: 0.9996,
                 false_easting: 500000,
-                latitude_of_origin: 0,
+                latitude_of_origin: north ? 0 : 10000000,
                 false_northing: 0,
                 central_meridian: zone * 6 - 183
             });
 
             return {
-                name: 'UTM',
                 origin: {x: 0, y: 0},
                 forward: function(lat, lng) {
                     var point = proj.forward([lng, lat]);

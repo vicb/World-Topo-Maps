@@ -10,35 +10,20 @@
 /**
  * Returns a map object for France
  *
- * @param {google.map.Map}         map     The google map
- * @param {drm}                    drm     IGN GeoDrm handler
- * @param {layer}                  layer   The name of the layer to display
- * @param {google.map.MapOptions=} options The map options
+ * @param {object=} options The map options
  *
  * @return {map} The map
  */
-WTMap.getIgnFMap = function(map, drm, layer, options) {
+WTMap.getIgnFMap = (function() {
 
-    var tileSize,
-        copyright,
-        territory = 'FXX',
-        listeners = {},
-        zoomOffsetMiller = Math.round(Math.log(2 * Math.PI * 6378137 / (39135.75 * 256)) / Math.LN2),
-        scale0Miller = 39135.75 * Math.pow(2, zoomOffsetMiller),
-        zoomOffsetGeop = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
-        scale0Geop = 2048 * Math.pow(2, zoomOffsetGeop),
-        options = options || {},
-        googProj = new WTMap.Projection.google(),
-        options = {
-            alt: options.alt || 'IGN ' + layer,
-            getTileUrl: getTileUrl,
-            isPng: false,
-            maxZoom: options.maxZoom || 18,
-            minZoom: options.minZoom || 2,
-            name: options.name || 'IGN ' + layer,
-            tileSize: new google.maps.Size(256, 256)
-        },
-        params = {
+    var ctor,
+        projections = [],
+        ZOOM_OFFSET_MILLER = Math.round(Math.log(2 * Math.PI * 6378137 / (39135.75 * 256)) / Math.LN2),
+        SCALE0_MILLER = 39135.75 * Math.pow(2, ZOOM_OFFSET_MILLER),
+        ZOOM_OFFSET_GEOP = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
+        SCALE0_GEOP = 2048 * Math.pow(2, ZOOM_OFFSET_GEOP),
+        TILE_SIZE = { x: 256, y: 256 },
+        PARAMS = {
             'ANF': {Kx: 107526.37112657, bounds: [11.7, -64, 18.18, -59]},
             'ASP': {Kx: 87720.95583112,  bounds: [-40, 76, -36, 79]},
             'CRZ': {Kx: 77329.01607478,  bounds: [-48, 47, -44, 55]},
@@ -50,52 +35,34 @@ WTMap.getIgnFMap = function(map, drm, layer, options) {
             'REU': {Kx: 103925.69769224, bounds: [-26.2, 37.5, -17.75, 60]},
             'SPM': {Kx: 75919.71016400, bounds: [43.5, -60, 52, -50]},
             'WLF': {Kx: 108012.82616793, bounds: [-14.6, -178.5, -12.8, -175.8]}
-        },
-        mapType = new google.maps.ImageMapType(options);
+        }
+    ;
 
     // Initialize the parameters
-    for (var t in params) {
-        if (params.hasOwnProperty(t)) {
-            params[t].bounds = new google.maps.LatLngBounds(
-                new google.maps.LatLng(params[t].bounds[0], params[t].bounds[1]),
-                new google.maps.LatLng(params[t].bounds[2], params[t].bounds[3])
-            );
+    for (var t in PARAMS) {
+        if (PARAMS.hasOwnProperty(t)) {
+            PARAMS[t].bounds = {
+                sw: { lat: PARAMS[t].bounds[0], lng: PARAMS[t].bounds[1] },
+                ne: { lat: PARAMS[t].bounds[2], lng: PARAMS[t].bounds[3] }
+            };
         }
-    }
-
-    /**
-     * Returns the URL of the request tile
-     *
-     * @param {google.maps.Point} point Tile coordinate
-     * @param {number}            zoom  The zoom level
-     *
-     * @return {string} The tile URL
-     */
-    function getTileUrl(point, zoom) {
-        return 'http://wxs.ign.fr/geoportail/wmsc?LAYERS={layer}&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&SRS={proj}&BBOX={bbox}&WIDTH=256&HEIGHT=256&TILED=true&gppkey={key}'
-            .replace('{bbox}', [point.x * tileSize, (-point.y - 1) * tileSize, (point.x + 1) * tileSize, -point.y * tileSize])
-            .replace('{key}', drm.getToken())
-            .replace('{proj}', googProj.proj.name)
-            .replace('{territory}', territory)
-            .replace('{layer}', layer === WTMap.LAYER_MAP ? 'GEOGRAPHICALGRIDSYSTEMS.MAPS' : 'ORTHOIMAGERY.ORTHOPHOTOS')
-        ;
     }
 
     /**
      * Create a control to display the copyright
      */
-    function initCopyright() {
+    function initCopyright(wtMap) {
         var img = document.createElement('img'),
             link = document.createElement('a');
 
-        if (layer === WTMap.LAYER_MAP) {
+        if (wtMap.options.layer === WTMap.LAYER_MAP) {
             link.href = 'http://www.ign.fr';
             link.title = img.alt = 'Copyright Ign';
-            img.src = '../img/logo_ign.gif';
+            img.src = wtMap.options.logosUrl["map"];
         } else {
             link.href = 'http://www.planetobserver.com';
             link.title = img.alt = 'Copyright Planet Observer';
-            img.src = '../img/logo_planetobserver.gif';
+            img.src = wtMap.options.logosUrl["photo"];
         }
         link.target = '_blank';
         link.style.padding = link.style.borderWidth = '0';
@@ -103,98 +70,142 @@ WTMap.getIgnFMap = function(map, drm, layer, options) {
         img.style.padding = img.style.margin = img.style.borderWidth = '0';
         link.style.display = 'none';
         link.appendChild(img);
-        map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(link);
+        wtMap.adapter.addCopyrightControl(link);
         return link;
     }
 
     /**
      * Initialize the projection accordring to the map center and zoom level
      */
-    function initProjection() {
-        var scale,
-            projFactory,
-            oldTerritory = territory,
-            zoom = map.getZoom();
+    function setProjection(wtMap) {
+        var oldTerritory = wtMap.territory,
+            zoom = wtMap.adapter.getZoom();
 
-        if (zoom < zoomOffsetGeop) {
+        if (zoom < ZOOM_OFFSET_GEOP) {
             // Lower zoom levels use a Miller projection
-            scale = scale0Miller;
-            projFactory = WTMap.Projection.miller;
-            territory = 'world';
+            wtMap.scale0 = SCALE0_MILLER;
+            wtMap.territory = 'world';
+            wtMap.projection = projections.world = projections.world || WTMap.Projection.miller();
+            wtMap.projectionName = 'IGNF:MILLER';
+
         } else {
             // Higher zoom levels use an equirectangular projection
-            var bounds = map.getBounds();
-
-            // Get the territory according to the area covered by the map
-            if (!params[territory] || (bounds && !params[territory].bounds.intersects(bounds))) {
-                for(var t in params) {
-                    if(params.hasOwnProperty(t) && bounds && params[t].bounds.intersects(bounds)) {
-                        territory = t;
+            if (!PARAMS[wtMap.territory] || !wtMap.adapter.isAreaVisible(PARAMS[wtMap.territory].bounds)) {
+                wtMap.territory = 'FXX';
+                for(var t in PARAMS) {
+                    if(PARAMS.hasOwnProperty(t) && wtMap.adapter.isAreaVisible(PARAMS[t].bounds)) {
+                        wtMap.territory = t;
                         break;
                     }
                 }
             }
-            scale = scale0Geop;
-            projFactory = function(territory) {
-                return WTMap.Projection.geoportal({
-                    Kx: params[territory].Kx,
-                    Ky: 111319.49079327
+            wtMap.scale0 = SCALE0_GEOP;
+
+            wtMap.projectionName = 'IGNF:GEOPORTAL' + wtMap.territory;
+
+            if (wtMap.territory !== oldTerritory) {
+                var center = wtMap.adapter.getCenter();
+                wtMap.projection = projections[wtMap.territory] || WTMap.Projection.equiRectangular({
+                    x: PARAMS[wtMap.territory].Kx,
+                    y: 111319.49079327
                 });
+                wtMap.adapter.setCenter(center);
             }
-        }
 
-        tileSize = options.tileSize.width * scale / Math.pow(2, zoom);
-
-        if (!bounds || oldTerritory != territory) {
-            var center = map.getCenter();
-            googProj.proj = projFactory(territory);
-            googProj.scale0 = scale;
-            map.setCenter(center);
         }
     }
 
-    // Update the DRM token even if the map is not currenlty enabled
-    google.maps.event.addListener(map, 'idle', drm.getToken);
+    ctor = function(options) {
+        options = options || {};
+        var layer = options.layer || WTMap.LAYER_MAP;
 
-    initProjection();
-    copyright = initCopyright();
-    mapType.projection = googProj;
+        this.options = {
+            layer: layer,
+            isPng: false,
+            name: options.name || 'IGN ' + layer,
+            maxZoom: options.maxZoom || 18,
+            minZoom: options.minZoom || 2,
+            logosUrl: options.logos || { map: '/img/logo_ign.gif', photo: '/img/logo_planetobserver.gif' },
+            tileSize: TILE_SIZE,
+            drm: options.drm
+        };
 
-    return {
-        /** @type {google.maps.ImageMapType} */
-        mapType: mapType,
-        /**
-         * The areas covered by the tiles
-         * @type {Array.<google.maps.LatLngBounds>}
-         */
-        bounds: (function() {
+        this.tileSize = null;
+        this.projectionName = null;
+        this.territory = null,
+        this.copyright = null;
+        this.adapter = null;
+        this.listeners = {};
+        this.projection = null;
+        this.scale0 = null;
+    }
+
+    ctor.prototype = {
+        getBounds: function() {
             var bounds = [];
-            for (var t in params) {
-                if (params.hasOwnProperty(t)) {
-                    bounds.push(params[t].bounds);
+            for (var t in PARAMS) {
+                if (PARAMS.hasOwnProperty(t)) {
+                    bounds.push(PARAMS[t].bounds);
                 }
             }
             return bounds;
-        })(),
+        },
+
+        init: function(adapter) {
+            this.adapter = adapter;
+            this.copyright = initCopyright(this);
+            // Update the DRM token even if the map is not currenlty enabled
+            adapter.afterMove(this.options.drm.getToken);
+            setProjection(this);
+        },
+
+        /**
+         * Returns the URL of the request tile
+         *
+         * @param {google.maps.Point} point Tile coordinate
+         * @param {number}            zoom  The zoom level
+         *
+         * @return {string} The tile URL
+         */
+        getTileUrl: function(point, zoom) {
+            var tileSize = 256 * this.scale0 / Math.pow(2, zoom);
+
+            return 'http://wxs.ign.fr/geoportail/wmsc?LAYERS={layer}&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&SRS={proj}&BBOX={bbox}&WIDTH=256&HEIGHT=256&TILED=true&gppkey={key}'
+                .replace('{bbox}', [
+                    tileSize * point.x,
+                    -tileSize * (point.y + 1),
+                    tileSize * (point.x + 1),
+                    -tileSize * point.y
+                ])
+                .replace('{key}', this.options.drm.getToken())
+                .replace('{proj}', this.projectionName)
+                .replace('{layer}', this.options.layer === WTMap.LAYER_MAP ? 'GEOGRAPHICALGRIDSYSTEMS.MAPS' : 'ORTHOIMAGERY.ORTHOPHOTOS')
+            ;
+        },
+
         /**
          * This function must be called before displaying the map
          */
         enable: function() {
-            initProjection();
-            listeners.zoom = google.maps.event.addListener(map, 'zoom_changed', initProjection);
-            listeners.center = google.maps.event.addListener(map, 'center_changed', initProjection);
-            copyright.style.display = 'block';
+            console.log('enable');
+            var me = this;
+            setProjection(this);
+            this.listeners.move = this.adapter.afterMove(function() { setProjection(me); });
+            this.copyright.style.display = 'block';
         },
+
         /**
          * This function must be called when the map is no more displayed
          */
         disable: function() {
-            listeners.zoom && google.maps.event.removeListener(listeners.zoom);
-            listeners.center && google.maps.event.removeListener(listeners.center);
-            copyright.style.display = 'none';
+            this.listeners.move && this.adapter.removeListener(this.listeners.move);
+            this.copyright.style.display = 'none';
         }
-    }
-};
+    };
+
+    return ctor;
+
+})();
 
 WTMap.Drm = {
     token: null,

@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>World Topo Maps</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
 
     <link type="text/css" href="style.css" rel="stylesheet" media="all" />
@@ -11,13 +12,17 @@
 
     <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=drawing&sensor=false"></script>
 
+
     <script type="text/javascript" src="../js/wtmap.js"></script>
     <script type="text/javascript" src="../js/swisstopo.js"></script>
-    <script type="text/javascript" src="../js/ignf.js"></script>
     <script type="text/javascript" src="../js/igne.js"></script>
+    <script type="text/javascript" src="../js/gmap.js"></script>
+    <script type="text/javascript" src="../js/ignf.js"></script>
     <script type="text/javascript" src="../js/manager.js"></script>
 
+
     <script type="text/javascript">
+
         jQuery(function($) {
 
             $('#coord').draggable({
@@ -25,49 +30,50 @@
                 opacity: 0.4
             });
 
-            var center = new google.maps.LatLng(48.230651, 5.140242);
+            var gmap = new google.maps.Map(
+                document.getElementById('gmap'),
+                {
+                    zoom: 6,
+                    center: new google.maps.LatLng(45, 5),
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    noClear: true
+                }
+            );
 
-            var myOptions = {
-                zoom: 6,
-                center: center,
-                mapTypeId: google.maps.MapTypeId.ROADMAP,
-                noClear: true
-            };
-
-            var map = new google.maps.Map(document.getElementById('gmap'), myOptions);
-
-            var drm = WTMap.IgnGeoDrm("5813011417347961637");
+            var gAdapter = new WTMap.Adapter.GMap(gmap);
 
             WTMap.Manager(
-                map,
+                gAdapter,
                 [
-                    WTMap.getIgnFMap(map, drm, WTMap.LAYER_MAP),
-                    WTMap.getSwissTopoMap(map, WTMap.LAYER_MAP),
-                    WTMap.getIgnEMap(map, WTMap.LAYER_MAP),
-                    WTMap.getIgnFMap(map, drm, WTMap.LAYER_PHOTO),
-                    WTMap.getSwissTopoMap(map, WTMap.LAYER_PHOTO),
-                    WTMap.getIgnEMap(map, WTMap.LAYER_PHOTO)
+                    new WTMap.getIgnFMap({
+                        drm: WTMap.IgnGeoDrm("5813011417347961637"),
+                        logos: { map: '../img/logo_ign.gif' }
+                    }),
+                    new WTMap.getIgnEMap({
+                        logo: '../img/logo_igne.gif'
+                    }),
+                    new WTMap.getSwissTopoMap()
                 ]
             );
 
-            google.maps.event.addListener(map, 'mousemove', function(ll) {
+            google.maps.event.addListener(gmap, 'mousemove', function(ll) {
                 $('#coord')
                     .find('#lat').text(ll.latLng.lat()).end()
                     .find('#lng').text(ll.latLng.lng()).end()
-                    .find('#zoom').text(map.getZoom()).end()
+                    .find('#zoom').text(gmap.getZoom()).end()
                 ;
             });
 
             $('#pos')
                 .on('click', 'li', function() {
-                    map.setCenter(new google.maps.LatLng($(this).data('lat'), $(this).data('lng')));
+                    gAdapter.setCenter({lat: $(this).data('lat'), lng: $(this).data('lng')});
                 })
                 .find('li').each(function() {
                     var text = $(this).text();
                     $(this).attr('title', $(this).data('lat') + ', ' + $(this).data('lng'));
                     new google.maps.Marker({
                         position: new google.maps.LatLng($(this).data('lat'), $(this).data('lng')),
-                        map: map,
+                        map: gmap,
                         title: text
                     });
                 })
@@ -80,7 +86,8 @@
 
 <body>
 
-  <div id="gmap" class="map_canvas"></div>
+    <div id="gmap" class="map_canvas"></div>
+
     <div id="coord">
         <div id="drag-handle"></div>
         <p>LatLng = (<span id="lat"></span>, <span id="lng"></span>)</p>
@@ -95,7 +102,7 @@
             <li data-lat="41.3885" data-lng="2.1869">Barcelone</li>
             <li data-lat="40.4171" data-lng="-3.6839">Madrid</li>
         </ul>
-   </div>
+    </div>
 
 
 </body>

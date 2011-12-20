@@ -39,7 +39,7 @@
             google.maps.MapTypeId.TERRAIN,
             google.maps.MapTypeId.SATELLITE
         ],
-        setOptions: function() { setOptions.apply(map, arguments); }
+        setOptions: function() {setOptions.apply(map, arguments);}
     };
 })();
 
@@ -48,7 +48,7 @@
  *  @param {google.maps.Map} map  A google map instance (base on API v3)
  *  @param {Array.<map>}     maps A list of maps to be managed
  */
-WTMap.Manager = function(map, maps) {
+WTMap.Manager = function(adapter, maps) {
     var nbMap = maps.length,
         wtgBounds = [],
         signature;
@@ -57,9 +57,17 @@ WTMap.Manager = function(map, maps) {
      * Enable the currently selected map
      */
     function enableMaps() {
-        var currentMap = map.getMapTypeId();
+        var enable = false,
+            currentMap = adapter.map.getMapTypeId();
         for (var i = 0; i < nbMap; i++) {
-            maps[i][currentMap == 'WTGMAP.' + i ? 'enable' : 'disable']();
+            if (currentMap === getMapName(i)) {
+                enable = i;
+            } else {
+                maps[i].disable();
+            }
+        }
+        if (enable !== false) {
+            maps[enable].enable();
         }
     }
 
@@ -70,7 +78,7 @@ WTMap.Manager = function(map, maps) {
         var nbBounds,
             found = false,
             mapTypes = WTMap.gmap.mapTypes.slice(),
-            center = map.getCenter();
+            center = adapter.map.getCenter();
 
         if (center) {
             // Build the list of visible maps
@@ -78,15 +86,17 @@ WTMap.Manager = function(map, maps) {
                 nbBounds = wtgBounds[i].length;
                 found = false;
                 for (var j = 0; j < nbBounds; j++) {
-                    if (wtgBounds[i][j].contains(center)) {
+//                    if (wtgBounds[i][j].contains(center)) {
+                    if (wtgBounds[i][j].sw.lat < center.lat() && wtgBounds[i][j].ne.lat > center.lat() &&
+                        wtgBounds[i][j].sw.lng < center.lng() && wtgBounds[i][j].ne.lng > center.lng()) {
                         mapTypes.push(getMapName(i));
                         found = true;
                         break;
                     }
                 }
                 // If the current map is not visible, fallback to the first map
-                if (!found && map.getMapTypeId() === getMapName(i)) {
-                    map.setMapTypeId(WTMap.gmap.mapTypes[0]);
+                if (!found && adapter.map.getMapTypeId() === getMapName(i)) {
+                    adapter.map.setMapTypeId(WTMap.gmap.mapTypes[0]);
                 }
             }
 
@@ -108,8 +118,8 @@ WTMap.Manager = function(map, maps) {
     function registerMaps() {
         var bounds;
         for (var i = 0; i < nbMap; i++) {
-            map.mapTypes.set(getMapName(i), maps[i].mapType);
-            bounds = maps[i].bounds;
+            adapter.map.mapTypes.set(getMapName(i), adapter.getMapType(maps[i]));
+            bounds = maps[i].getBounds();
             wtgBounds.push(bounds.length ? bounds : [bounds]);
         }
     }
@@ -128,8 +138,8 @@ WTMap.Manager = function(map, maps) {
     activateMaps();
     enableMaps();
     // Enable only the selected map on map changes
-    google.maps.event.addListener(map, 'maptypeid_changed', enableMaps);
+    google.maps.event.addListener(adapter.map, 'maptypeid_changed', enableMaps);
     // Update the list of visible maps when the map moves
-    google.maps.event.addListener(map, 'bounds_changed', activateMaps);
-}
+    google.maps.event.addListener(adapter.map, 'bounds_changed', activateMaps);
+};
 

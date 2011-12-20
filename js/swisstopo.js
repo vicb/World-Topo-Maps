@@ -10,22 +10,15 @@
 /**
  * Returns a map object for Switzerland
  *
- * @param {google.map.Map}         map     The google map
- * @param {layer}                  layer   The name of the layer to display
- * @param {google.map.MapOptions=} options The map options
+ * @param {object=} options The map options
  *
  * @return {map} The map
  */
-WTMap.getSwissTopoMap = function(map, layer, options) {
+WTMap.getSwissTopoMap = (function() {
 
-    var gZoom,
-        copyright,
-        center,
-        listeners = {},
+    var ctor,
         server = 0,
-        options = options || {},
-        googProj = new WTMap.Projection.google(WTMap.Projection.swisstopo()),
-        params = {
+        PARAMS = {
             5: {scale: 4000, zoom: 0},
             6: {scale: 2500, zoom: 6},
             7: {scale: 1250, zoom: 11},
@@ -41,21 +34,13 @@ WTMap.getSwissTopoMap = function(map, layer, options) {
             17: {scale: 1.5, zoom: 24},
             18: {scale: 0.5, zoom: 26}
         },
-        options = {
-            alt: options.alt || 'SwissTopo ' + layer,
-            getTileUrl: getTileUrl,
-            isPng: false,
-            maxZoom: options.maxZoom || 18,
-            minZoom: options.minZoom || 5,
-            name: options.name || 'SwissTopo ' + layer,
-            tileSize: new google.maps.Size(256, 256)
-        },
-        mapType = new google.maps.ImageMapType(options);
+        TILE_SIZE = {x: 256, y: 256}
+    ;
 
     /**
      * Create a control to display the copyright
      */
-    function initCopyright() {
+    function initCopyright(wtMap) {
         var link = document.createElement('a');
 
         link.href = 'http://www.swisstopo.ch/';
@@ -71,84 +56,114 @@ WTMap.getSwissTopoMap = function(map, layer, options) {
         link.style.border = '1px gray solid';
         link.style.display = 'none';
         link.style.textDecoration = 'none';
-        map.controls[google.maps.ControlPosition.BOTTOM_LEFT].push(link);
+        wtMap.adapter.addCopyrightControl(link);
         return link;
     }
 
     /**
-     * Initialize the projection accordring to the map center and zoom level
+     * Initialize the projection according to the map center and zoom level
      */
-    function initProjection() {
-        var zoom = map.getZoom();
+    function setProjection(wtMap) {
+        var zoom = wtMap.adapter.getZoom();
 
-        if (gZoom && zoom == 10) {
+        if (wtMap.zoom && zoom == 10) {
             // skip zoom level 10 which is not supported
-            var delta = zoom - gZoom;
-            zoom = zoom + delta / Math.abs(delta);
-            map.setZoom(zoom);
+            var delta = zoom - wtMap.zoom;
+            wtMap.zoom = zoom + delta / Math.abs(delta);
+            wtMap.adapter.setZoom(zoom);
         }
-        gZoom = zoom;
-
-        googProj.scale0 = params[gZoom].scale * Math.pow(2, zoom);
-        map.setCenter(center);
+        wtMap.zoom = zoom;
+        wtMap.scale0 = PARAMS[zoom].scale * Math.pow(2, zoom);
+        wtMap.adapter.setCenter(wtMap.center);
     }
 
-    /**
-     * Returns the URL of the request tile
-     *
-     * @param {google.maps.Point} point Tile coordinate
-     * @param {number}            zoom  The zoom level
-     *
-     * @return {string} The tile URL
-     */
-    function getTileUrl(point, zoom) {
-        return 'http://wmts{server}.geo.admin.ch/1.0.0/{layer}/default/{date}/{proj}/{zoom}/{y}/{x}.jpeg'
-            .replace('{server}', server++ % 4)
-            .replace('{y}', point.y)
-            .replace('{x}', point.x)
-            .replace('{proj}', googProj.proj.name)
-            .replace('{zoom}', params[gZoom].zoom)
-            .replace('{date}', layer === WTMap.LAYER_MAP ? '20111206' : '20110914')
-            .replace('{layer}', layer === WTMap.LAYER_MAP ? 'ch.swisstopo.pixelkarte-farbe' : 'ch.swisstopo.swissimage')
-        ;
+    ctor = function(options) {
+        options = options || {};
+        var layer = options.layer || WTMap.LAYER_MAP;
+
+        this.options = {
+            layer: layer,
+            isPng: false,
+            name: options.name || 'SwissTopo ' + layer,
+            maxZoom: options.maxZoom || 18,
+            minZoom: options.minZoom || 5,
+            tileSize: TILE_SIZE
+        };
+
+        this.zoom = null;
+        this.copyright = null;
+        this.center = null;
+        this.adapter = null;
+        this.listeners = {};
+        this.projection = WTMap.Projection.ESPG_21781();
+        this.scale0 = null;
     }
 
-    center = map.getCenter();
-    initProjection();
-    copyright = initCopyright();
-    mapType.projection = googProj;
+    ctor.prototype = {
+        getBounds: function() {
+            return {
+                sw: {lat: 45.398181, lng: 5.140242},
+                ne: {lat: 48.230651, lng: 11.47757}
+            }
+        },
 
-    return {
-        /** @type {google.maps.ImageMapType} */
-        mapType: mapType,
-        /**
-         * The area covered by the tiles
-         * @type {google.maps.LatLngBounds}
-         */
-        bounds: new google.maps.LatLngBounds(
-            new google.maps.LatLng(45.398181, 5.140242),
-            new google.maps.LatLng(48.230651, 11.47757)
-        ),
+        init: function(adapter) {
+            this.center = adapter.getCenter();
+            this.adapter = adapter;
+            this.copyright = initCopyright(this);
+            setProjection(this);
+        },
+
         /**
          * This function must be called before displaying the map
          */
         enable: function() {
-            center = map.getCenter();
-            initProjection();
+            var me = this;
+            this.center = this.adapter.getCenter();
+            setProjection(this);
             // Capture the center value when the map becomes idle
             // This is required to apply this value when the zoom level changes as consecutive zoom
             // resolution ratio is not 2 as expected by the google maps API
-            listeners.idle = google.maps.event.addListener(map, 'idle', function(){ center = map.getCenter(); });
-            listeners.zoom = google.maps.event.addListener(map, 'zoom_changed', initProjection);
-            copyright.style.display = 'block';
+            this.listeners.move = this.adapter.afterMove(function() {me.center = me.adapter.getCenter();});
+            this.listeners.zoom = this.adapter.onZoomChange(function() {setProjection(me);});
+            this.copyright.style.display = 'block';
         },
         /**
          * This function must be called when the map is no more displayed
          */
         disable: function() {
-            listeners.idle && google.maps.event.removeListener(listeners.idle);
-            listeners.zoom && google.maps.event.removeListener(listeners.zoom);
-            copyright.style.display = 'none';
+            this.listeners.move && this.adapter.removeListener(this.listeners.move);
+            this.listeners.zoom && this.adapter.removeListener(this.listeners.zoom)
+            this.copyright.style.display = 'none';
+        },
+
+        /**
+         * Returns the URL of the request tile
+         *
+         * @param {google.maps.Point} point Tile coordinate
+         * @param {number}            zoom  The zoom level
+         *
+         * @return {string} The tile URL
+         */
+        getTileUrl: function(point, zoom) {
+            return 'http://wmts{server}.geo.admin.ch/1.0.0/{layer}/default/{date}/{proj}/{zoom}/{y}/{x}.jpeg'
+                .replace('{server}', server++ % 4)
+                .replace('{y}', point.y)
+                .replace('{x}', point.x)
+                .replace('{proj}', 21781)
+                .replace('{zoom}', PARAMS[zoom].zoom)
+                .replace('{date}', this.options.layer === WTMap.LAYER_MAP ? '20111206' : '20110914')
+                .replace('{layer}', this.options.layer === WTMap.LAYER_MAP ? 'ch.swisstopo.pixelkarte-farbe' : 'ch.swisstopo.swissimage')
+            ;
         }
     }
-};
+
+    return ctor;
+
+})();
+
+
+
+
+
+
