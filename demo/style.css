@@ -1,0 +1,54 @@
+html, body { margin: 0; padding: 0; }
+h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, cite, code, del, dfn, em, img, q, s, samp, small, strike, strong, sub, sup, tt, var, dd, dl, dt, li, ol, ul, fieldset, form, label, legend, button, table, caption, tbody, tfoot, thead, tr, th, td { margin: 0; padding: 0; border: 0; font-weight: normal; font-style: normal; font-size: 100%; line-height: 1; font-family: inherit; }
+table { border-collapse: collapse; border-spacing: 0; }
+ol, ul { list-style: none; }
+q:before, q:after, blockquote:before, blockquote:after { content: ""; }
+html { height: 100% }
+body { height: 100%; margin: 0; padding: 0; font-family: Verdana, sans-serif; font-size: 85%; }
+
+.map_canvas {
+    height: 100%;
+    width: 100%;
+    float: left;
+}
+#coord {
+    cursor: move;
+    position: absolute;
+    border: 1px solid gray;
+    padding: 10px;
+    color: lightgray;
+    background-color: black;
+    z-index: 100000;
+    top: 30px;
+    left: 100px;
+    width: 40%;
+    opacity: 0.8;
+}
+#drag-handle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent url(handle.png) no-repeat scroll top right;
+    width: 24px;
+    height: 24px;
+}
+
+#coord ul {
+    margin-top: 10px;
+}
+#coord li {
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    float: left;
+    padding: 5px;
+    font-weight: bold;
+    margin: 5px;
+    border: 1px solid gray;
+    border-radius: 8px;
+    background-color: #444;
+}
+#coord li:hover {
+    background-color: white;
+    color: black;
+}

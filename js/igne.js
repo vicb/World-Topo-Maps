@@ -16,7 +16,7 @@
  *
  * @return {map} The map
  */
-WTGmap.getIgnEMap = function(map, layer, options) {
+WTMap.getIgnEMap = function(map, layer, options) {
 
     var zone,
         center,
@@ -26,7 +26,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         listeners = {},
         zoomOffset = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
         options = options || {},
-        googProj = new WTGmap.Projection.google(WTGmap.Projection.iberpix(30), 2048 * Math.pow(2,  zoomOffset)),
+        googProj = new WTMap.Projection.google(WTMap.Projection.iberpix(30), 2048 * Math.pow(2,  zoomOffset)),
         options = {
             alt: options.alt || 'IGNE ' + layer,
             getTileUrl: getTileUrl,
@@ -39,7 +39,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         mapType = new google.maps.ImageMapType(options);
 
 
-    layerNames = layer === WTGmap.LAYER_MAP ?
+    layerNames = layer === WTMap.LAYER_MAP ?
         ['mapa_millon', "mapa_mtn200", "mapa_mtn50", "mapa_mtn25"] :
         ['mapa_inicio', "spot5", "pnoa", "pnoa"];
 
@@ -90,7 +90,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
 
         link.href = 'http://www.ign.es';
         link.title = img.alt = 'Copyright Ign';
-        img.src = 'img/logo_igne.gif';
+        img.src = '../img/logo_igne.gif';
 
         link.target = '_blank';
         link.style.padding = link.style.borderWidth = '0';
@@ -124,7 +124,7 @@ WTGmap.getIgnEMap = function(map, layer, options) {
         }
 
         if (oldZone != zone) {
-            googProj.proj = WTGmap.Projection.iberpix(zone);
+            googProj.proj = WTMap.Projection.iberpix(zone);
             map.setCenter(center);
         }
     }

@@ -17,7 +17,7 @@
  *
  * @return {map} The map
  */
-WTGmap.getIgnFMap = function(map, drm, layer, options) {
+WTMap.getIgnFMap = function(map, drm, layer, options) {
 
     var tileSize,
         copyright,
@@ -28,7 +28,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         zoomOffsetGeop = Math.round(Math.log(2 * Math.PI * 6378137 / (2048 * 256)) / Math.LN2),
         scale0Geop = 2048 * Math.pow(2, zoomOffsetGeop),
         options = options || {},
-        googProj = new WTGmap.Projection.google(),
+        googProj = new WTMap.Projection.google(),
         options = {
             alt: options.alt || 'IGN ' + layer,
             getTileUrl: getTileUrl,
@@ -77,7 +77,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
             .replace('{key}', drm.getToken())
             .replace('{proj}', googProj.proj.name)
             .replace('{territory}', territory)
-            .replace('{layer}', layer === WTGmap.LAYER_MAP ? 'GEOGRAPHICALGRIDSYSTEMS.MAPS' : 'ORTHOIMAGERY.ORTHOPHOTOS')
+            .replace('{layer}', layer === WTMap.LAYER_MAP ? 'GEOGRAPHICALGRIDSYSTEMS.MAPS' : 'ORTHOIMAGERY.ORTHOPHOTOS')
         ;
     }
 
@@ -88,14 +88,14 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         var img = document.createElement('img'),
             link = document.createElement('a');
 
-        if (layer === WTGmap.LAYER_MAP) {
+        if (layer === WTMap.LAYER_MAP) {
             link.href = 'http://www.ign.fr';
             link.title = img.alt = 'Copyright Ign';
-            img.src = 'img/logo_ign.gif';
+            img.src = '../img/logo_ign.gif';
         } else {
             link.href = 'http://www.planetobserver.com';
             link.title = img.alt = 'Copyright Planet Observer';
-            img.src = 'img/logo_planetobserver.gif';
+            img.src = '../img/logo_planetobserver.gif';
         }
         link.target = '_blank';
         link.style.padding = link.style.borderWidth = '0';
@@ -119,7 +119,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
         if (zoom < zoomOffsetGeop) {
             // Lower zoom levels use a Miller projection
             scale = scale0Miller;
-            projFactory = WTGmap.Projection.miller;
+            projFactory = WTMap.Projection.miller;
             territory = 'world';
         } else {
             // Higher zoom levels use an equirectangular projection
@@ -136,7 +136,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
             }
             scale = scale0Geop;
             projFactory = function(territory) {
-                return WTGmap.Projection.geoportal({
+                return WTMap.Projection.geoportal({
                     Kx: params[territory].Kx,
                     Ky: 111319.49079327
                 });
@@ -196,7 +196,7 @@ WTGmap.getIgnFMap = function(map, drm, layer, options) {
     }
 };
 
-WTGmap.Drm = {
+WTMap.Drm = {
     token: null,
     script: null,
     /**
@@ -205,13 +205,13 @@ WTGmap.Drm = {
      * @param {Object} json The token
      */
     updateToken: function(json) {
-        WTGmap.Drm.token = json.gppkey;
-        document.body.removeChild(WTGmap.Drm.script);
-        WTGmap.Drm.script = null;
+        WTMap.Drm.token = json.gppkey;
+        document.body.removeChild(WTMap.Drm.script);
+        WTMap.Drm.script = null;
     }
 }
 
-WTGmap.IgnGeoDrm = function(apiKey) {
+WTMap.IgnGeoDrm = function(apiKey) {
     var tickTimer,
         tiles = 1,
         ttl = 1;
@@ -222,10 +222,10 @@ WTGmap.IgnGeoDrm = function(apiKey) {
      * @param {string} url The URL to call
      */
     function xdSend(url) {
-        WTGmap.Drm.script = document.createElement('script');
-        WTGmap.Drm.script.setAttribute('src', url);
-        WTGmap.Drm.script.setAttribute('type', 'text/javascript');
-        document.body.appendChild(WTGmap.Drm.script);
+        WTMap.Drm.script = document.createElement('script');
+        WTMap.Drm.script.setAttribute('src', url);
+        WTMap.Drm.script.setAttribute('type', 'text/javascript');
+        document.body.appendChild(WTMap.Drm.script);
     }
 
     /**
@@ -239,13 +239,13 @@ WTGmap.IgnGeoDrm = function(apiKey) {
             if (--ttl === 0) {
                 // Update the token value when the ttl is reached
                 ttl = 9;
-                xdSend('http://jeton-api.ign.fr/getToken?callback=WTGmap.Drm.updateToken&output=json&key=' + apiKey + (WTGmap.Drm.token ? '&gppkey=' + WTGmap.Drm.token : ''));
+                xdSend('http://jeton-api.ign.fr/getToken?callback=WTMap.Drm.updateToken&output=json&key=' + apiKey + (WTMap.Drm.token ? '&gppkey=' + WTMap.Drm.token : ''));
             }
         } else {
             // Release the token when there has been no activity
-            xdSend('http://jeton-api.ign.fr/releaseToken?gppkey=' + WTGmap.Drm.token);
+            xdSend('http://jeton-api.ign.fr/releaseToken?gppkey=' + WTMap.Drm.token);
             ttl = 1;
-            WTGmap.Drm.token = null;
+            WTMap.Drm.token = null;
             tickTimer = null;
         }
     }
@@ -264,7 +264,7 @@ WTGmap.IgnGeoDrm = function(apiKey) {
                 // Restart a period when the timer has been stopped
                 getToken();
             }
-            return WTGmap.Drm.token;
+            return WTMap.Drm.token;
         }
     }
 

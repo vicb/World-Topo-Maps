@@ -7,12 +7,12 @@
  * file that was distributed with this source code.
  */
 
-var WTGmap = {
+var WTMap = {
     LAYER_MAP:   'MAP',
     LAYER_PHOTO: 'PHOTO'
 };
 
-WTGmap.Projection = function() {
+WTMap.Projection = (function() {
     /**
      * Convert degree to radian
      *
@@ -85,7 +85,6 @@ WTGmap.Projection = function() {
      * <a target  = wiki href  = 'http://en.wikipedia.org/wiki/Transverse_Mercator_projection'>Transverse Mercator Projection</a>
      */
     function TransverseMercator(params) {
-        console.log('ctor');
         params = params || {};
         //GLatLng(33.74561,-84.454308)<  === >  GPoint(2209149.07977075, 1362617.71496891);
         this.a_ = params.semi_major / params.unit;
@@ -314,4 +313,4 @@ WTGmap.Projection = function() {
         }
     };
 
-}();
+})();

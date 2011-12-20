@@ -16,7 +16,7 @@
  *
  * @return {map} The map
  */
-WTGmap.getSwissTopoMap = function(map, layer, options) {
+WTMap.getSwissTopoMap = function(map, layer, options) {
 
     var gZoom,
         copyright,
@@ -24,7 +24,7 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
         listeners = {},
         server = 0,
         options = options || {},
-        googProj = new WTGmap.Projection.google(WTGmap.Projection.swisstopo()),
+        googProj = new WTMap.Projection.google(WTMap.Projection.swisstopo()),
         params = {
             5: {scale: 4000, zoom: 0},
             6: {scale: 2500, zoom: 6},
@@ -108,8 +108,8 @@ WTGmap.getSwissTopoMap = function(map, layer, options) {
             .replace('{x}', point.x)
             .replace('{proj}', googProj.proj.name)
             .replace('{zoom}', params[gZoom].zoom)
-            .replace('{date}', layer === WTGmap.LAYER_MAP ? '20111206' : '20110914')
-            .replace('{layer}', layer === WTGmap.LAYER_MAP ? 'ch.swisstopo.pixelkarte-farbe' : 'ch.swisstopo.swissimage')
+            .replace('{date}', layer === WTMap.LAYER_MAP ? '20111206' : '20110914')
+            .replace('{layer}', layer === WTMap.LAYER_MAP ? 'ch.swisstopo.pixelkarte-farbe' : 'ch.swisstopo.swissimage')
         ;
     }
 

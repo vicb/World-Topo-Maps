@@ -15,7 +15,7 @@
 
     function setMapTypes(options) {
         if (options && options.mapTypeControlOptions && options.mapTypeControlOptions.mapTypeIds) {
-            WTGmap.gmap.mapTypes = options.mapTypeControlOptions.mapTypeIds;
+            WTMap.gmap.mapTypes = options.mapTypeControlOptions.mapTypeIds;
         }
     }
 
@@ -27,13 +27,13 @@
         setOptions = ctor.prototype.setOptions;
         ctor.prototype.setOptions = function(options) {
             setMapTypes(options);
-            WTGmap.gmap.setOptions(arguments);
+            WTMap.gmap.setOptions(arguments);
         };
     };
 
     google.maps.Map.prototype = ctor.prototype;
 
-    WTGmap.gmap = {
+    WTMap.gmap = {
         mapTypes: [
             google.maps.MapTypeId.ROADMAP,
             google.maps.MapTypeId.TERRAIN,
@@ -48,7 +48,7 @@
  *  @param {google.maps.Map} map  A google map instance (base on API v3)
  *  @param {Array.<map>}     maps A list of maps to be managed
  */
-WTGmap.Manager = function(map, maps) {
+WTMap.Manager = function(map, maps) {
     var nbMap = maps.length,
         wtgBounds = [],
         signature;
@@ -69,7 +69,7 @@ WTGmap.Manager = function(map, maps) {
     function activateMaps() {
         var nbBounds,
             found = false,
-            mapTypes = WTGmap.gmap.mapTypes.slice(),
+            mapTypes = WTMap.gmap.mapTypes.slice(),
             center = map.getCenter();
 
         if (center) {
@@ -86,13 +86,13 @@ WTGmap.Manager = function(map, maps) {
                 }
                 // If the current map is not visible, fallback to the first map
                 if (!found && map.getMapTypeId() === getMapName(i)) {
-                    map.setMapTypeId(WTGmap.gmap.mapTypes[0]);
+                    map.setMapTypeId(WTMap.gmap.mapTypes[0]);
                 }
             }
 
             // Update the MapTypeControl only when required to prevent flickering
             if (mapTypes.toString() !== signature) {
-                WTGmap.gmap.setOptions({
+                WTMap.gmap.setOptions({
                     mapTypeControlOptions: {
                         mapTypeIds: mapTypes
                     }

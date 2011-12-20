@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>World Topo Maps</title>
+
+
+    <link type="text/css" href="style.css" rel="stylesheet" media="all" />
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+
+    <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?libraries=drawing&sensor=false"></script>
+
+    <script type="text/javascript" src="../js/wtmap.js"></script>
+    <script type="text/javascript" src="../js/swisstopo.js"></script>
+    <script type="text/javascript" src="../js/ignf.js"></script>
+    <script type="text/javascript" src="../js/igne.js"></script>
+    <script type="text/javascript" src="../js/manager.js"></script>
+
+    <script type="text/javascript">
+        jQuery(function($) {
+
+            $('#coord').draggable({
+                containment: 'body',
+                opacity: 0.4
+            });
+
+            var center = new google.maps.LatLng(48.230651, 5.140242);
+
+            var myOptions = {
+                zoom: 6,
+                center: center,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                noClear: true
+            };
+
+            var map = new google.maps.Map(document.getElementById('gmap'), myOptions);
+
+            var drm = WTMap.IgnGeoDrm("5813011417347961637");
+
+            WTMap.Manager(
+                map,
+                [
+                    WTMap.getIgnFMap(map, drm, WTMap.LAYER_MAP),
+                    WTMap.getSwissTopoMap(map, WTMap.LAYER_MAP),
+                    WTMap.getIgnEMap(map, WTMap.LAYER_MAP),
+                    WTMap.getIgnFMap(map, drm, WTMap.LAYER_PHOTO),
+                    WTMap.getSwissTopoMap(map, WTMap.LAYER_PHOTO),
+                    WTMap.getIgnEMap(map, WTMap.LAYER_PHOTO)
+                ]
+            );
+
+            google.maps.event.addListener(map, 'mousemove', function(ll) {
+                $('#coord')
+                    .find('#lat').text(ll.latLng.lat()).end()
+                    .find('#lng').text(ll.latLng.lng()).end()
+                    .find('#zoom').text(map.getZoom()).end()
+                ;
+            });
+
+            $('#pos')
+                .on('click', 'li', function() {
+                    map.setCenter(new google.maps.LatLng($(this).data('lat'), $(this).data('lng')));
+                })
+                .find('li').each(function() {
+                    var text = $(this).text();
+                    $(this).attr('title', $(this).data('lat') + ', ' + $(this).data('lng'));
+                    new google.maps.Marker({
+                        position: new google.maps.LatLng($(this).data('lat'), $(this).data('lng')),
+                        map: map,
+                        title: text
+                    });
+                })
+            ;
+        });
+
+    </script>
+
+</head>
+
+<body>
+
+  <div id="gmap" class="map_canvas"></div>
+    <div id="coord">
+        <div id="drag-handle"></div>
+        <p>LatLng = (<span id="lat"></span>, <span id="lng"></span>)</p>
+        <p>Zoom = <span id="zoom"></span></p>
+        <ul id="pos">
+            <li data-lat="45.1888" data-lng="5.8053" >Meylan</li>
+            <li data-lat="-20.8723" data-lng="55.4496">St Denis</li>
+            <li data-lat="-21.3659" data-lng="55.7741">St Philippe</li>
+            <li data-lat="46.2063" data-lng="6.1389">Geneve</li>
+            <li data-lat="46.9540" data-lng="7.4707">Bern</li>
+            <li data-lat="-22.2744" data-lng="166.4546">Noumea</li>
+            <li data-lat="41.3885" data-lng="2.1869">Barcelone</li>
+            <li data-lat="40.4171" data-lng="-3.6839">Madrid</li>
+        </ul>
+   </div>
+
+
+</body>
+</html>
